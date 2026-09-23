@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Soundshow</title>
+<title>Soundshow 0.6</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 body{min-height:100vh;display:grid;place-items:center}.hidden{display:none!important}
@@ -23,10 +23,11 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 .sc-shell{position:fixed;left:-10000px;top:0;width:300px;height:166px;overflow:hidden}
 #scPlayer{width:300px;height:166px;border:0}
 @media(max-width:600px){.show{padding:8px}.stage{border-radius:10px}.drop{padding:2rem 1rem}.controls{gap:.35rem}.controls button{padding:.65rem .8rem}.center{gap:.4rem}.play{min-width:90px}}
+.version{position:fixed;right:14px;bottom:10px;color:#777;font-size:.78rem;z-index:9999;user-select:none}
 </style>
 </head>
 <body>
-<main>
+<div class="version">Soundshow 0.6</div><main>
 <section id="loader" class="loader">
 <h1>Soundshow</h1><p>Open a Soundshow presentation from your computer.</p>
 <label class="choose" for="fileInput">Choose JSON file</label><input id="fileInput" type="file" accept=".json,application/json">
@@ -46,7 +47,7 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 <script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
 "use strict";
-let config=null,index=0,widget=null,widgetReady=false,playing=false,pendingUrl=null;
+let config=null,index=0,widget=null,widgetReady=false,playing=false,wantsPlayback=false,pendingUrl=null;
 const $=id=>document.getElementById(id), loader=$("loader"),ready=$("ready"),show=$("show"),input=$("fileInput"),drop=$("dropZone"),status=$("status"),player=$("scPlayer"),img=$("slideImage"),playBtn=$("playBtn"),audioStatus=$("audioStatus");
 
 function validate(d){if(!d||typeof d!=="object")throw Error("JSON root must be an object.");if(!Array.isArray(d.slides)||!d.slides.length)throw Error("No slides were found.");d.slides.forEach((s,i)=>{if(!s||typeof s!=="object")throw Error("Slide "+(i+1)+" is invalid.");if(typeof s.image!=="string"||!s.image)throw Error("Slide "+(i+1)+" has no image.");});return d}
@@ -58,16 +59,16 @@ function initWidget(){
  widget=SC.Widget(player);
  widget.bind(SC.Widget.Events.READY,()=>{widgetReady=true;audioStatus.textContent="SoundCloud ready — press Play."; if(pendingUrl){loadTrack(pendingUrl);pendingUrl=null}});
  widget.bind(SC.Widget.Events.PLAY,()=>{playing=true;playBtn.textContent="❚❚ Pause";audioStatus.textContent="Playing"});
- widget.bind(SC.Widget.Events.PAUSE,()=>{playing=false;playBtn.textContent="▶ Play";audioStatus.textContent="Paused"});
+ widget.bind(SC.Widget.Events.PAUSE,()=>{playing=false;if(!wantsPlayback){playBtn.textContent="▶ Play";audioStatus.textContent="Paused"}});
  widget.bind(SC.Widget.Events.FINISH,()=>{playing=false;playBtn.textContent="▶ Play";audioStatus.textContent="Track finished"});
  widget.bind(SC.Widget.Events.ERROR,()=>{playing=false;playBtn.textContent="▶ Play";audioStatus.textContent="SoundCloud could not load this track."});
 }
 function loadTrack(url){
- playing=false;playBtn.textContent="▶ Play";
+ playing=false;playBtn.textContent=wantsPlayback?"❚❚ Pause":"▶ Play";
  if(!url){audioStatus.textContent="No audio on this slide."; if(widgetReady)widget.pause();return}
  audioStatus.textContent="Loading SoundCloud track…";
  if(!widgetReady){pendingUrl=url;player.src="https://w.soundcloud.com/player/?url="+encodeURIComponent(url)+"&auto_play=false";initWidget();return}
- widget.load(url,{auto_play:false,hide_related:true,show_comments:false,show_reposts:false,show_user:true,visual:false,callback:()=>{audioStatus.textContent="SoundCloud ready — press Play."}});
+ widget.load(url,{auto_play:false,hide_related:true,show_comments:false,show_reposts:false,show_user:true,visual:false,callback:()=>{if(wantsPlayback){audioStatus.textContent="Starting track…";setTimeout(()=>widget.play(),150)}else{audioStatus.textContent="SoundCloud ready — press Play."}}});
 }
 function render(n){
  index=(n+config.slides.length)%config.slides.length;const s=config.slides[index];
@@ -75,13 +76,13 @@ function render(n){
  $("slideTitle").textContent=s.title||"";$("slideCaption").textContent=s.caption||"";$("counter").textContent=(index+1)+" / "+config.slides.length;
  loadTrack(s.soundcloud||null);
 }
-function reset(){if(widgetReady)widget.pause();player.src="about:blank";widget=null;widgetReady=false;pendingUrl=null;playing=false;input.value="";config=null;show.classList.add("hidden");ready.classList.add("hidden");loader.classList.remove("hidden")}
+function reset(){if(widgetReady)widget.pause();player.src="about:blank";widget=null;widgetReady=false;pendingUrl=null;playing=false;wantsPlayback=false;input.value="";config=null;show.classList.add("hidden");ready.classList.add("hidden");loader.classList.remove("hidden")}
 input.addEventListener("change",()=>loadFile(input.files&&input.files[0]));
 ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
 drop.addEventListener("drop",e=>loadFile(e.dataTransfer.files&&e.dataTransfer.files[0]));
 $("startBtn").addEventListener("click",()=>{ready.classList.add("hidden");show.classList.remove("hidden");render(0)});
-playBtn.addEventListener("click",()=>{if(!widgetReady){audioStatus.textContent="SoundCloud is still loading…";return} if(playing)widget.pause();else widget.play()});
+playBtn.addEventListener("click",()=>{if(!widgetReady){audioStatus.textContent="SoundCloud is still loading…";return} if(wantsPlayback){wantsPlayback=false;widget.pause()}else{wantsPlayback=true;playBtn.textContent="❚❚ Pause";audioStatus.textContent="Starting track…";widget.play()}});
 $("anotherBtn").addEventListener("click",reset);$("exitBtn").addEventListener("click",reset);$("prevBtn").addEventListener("click",()=>render(index-1));$("nextBtn").addEventListener("click",()=>render(index+1));
 document.addEventListener("keydown",e=>{if(show.classList.contains("hidden"))return;if(e.key==="ArrowLeft")render(index-1);if(e.key==="ArrowRight")render(index+1);if(e.code==="Space"){e.preventDefault();playBtn.click()}});
 </script>
