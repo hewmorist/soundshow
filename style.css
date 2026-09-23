@@ -1,13 +1,20 @@
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#0c0c0c;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 body{min-height:100vh;display:grid;place-items:center}
-button{font:inherit;cursor:pointer;border:1px solid #555;background:#181818;color:white;border-radius:999px;padding:.8rem 1.2rem}
-button:hover{background:#292929}
+button,.choose{font:inherit;cursor:pointer;border:1px solid #555;background:#181818;color:white;border-radius:999px;padding:.8rem 1.2rem}
+button:hover,.choose:hover{background:#292929}
 .hidden{display:none!important}
-.start-screen{text-align:center;padding:2rem}
-.start-screen h1{font-size:clamp(2rem,6vw,4.5rem);margin:0 0 .5rem}
-.start-screen p{color:#aaa;margin:0 0 2rem}
-#startBtn{font-size:1.1rem;padding:1rem 1.6rem;background:white;color:#111;border-color:white}
+.loader,.ready-screen{text-align:center;width:min(92vw,700px);padding:2rem}
+.loader h1,.ready-screen h1{font-size:clamp(2.4rem,7vw,5rem);margin:0 0 .5rem}
+.loader>p,.ready-screen>p{color:#aaa;margin:0 0 2rem}
+#fileInput{position:absolute;left:-10000px}
+.choose{display:inline-block;background:white;color:#111;border-color:white;font-weight:650}
+.drop-zone{margin:2rem auto 0;border:2px dashed #555;border-radius:18px;padding:3rem 1rem;color:#aaa;transition:.2s}
+.drop-zone.dragover{border-color:#fff;color:#fff;background:#171717}
+.status{min-height:1.5rem;margin-top:1rem!important;color:#e0a0a0!important}
+.ready-screen button{margin:.35rem}
+#startBtn{background:white;color:#111;border-color:white;font-size:1.08rem}
+.secondary{background:transparent;color:#bbb}
 .show{width:min(100vw,1100px);padding:16px}
 .stage{position:relative;aspect-ratio:1/1;max-height:76vh;margin:auto;overflow:hidden;border-radius:18px;background:#111}
 .stage img{width:100%;height:100%;object-fit:contain;display:block;opacity:0;transition:opacity .65s ease}
@@ -18,6 +25,7 @@ button:hover{background:#292929}
 .copy p{font-size:clamp(1rem,2vw,1.25rem);margin:0;color:#ddd}
 .controls{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:14px 2px}
 #counter{color:#999}
+.lower-controls{text-align:center;padding-bottom:8px}
 .player-wrap{height:1px;overflow:hidden;opacity:.01}
 #scPlayer{width:100%;height:166px;border:0}
-@media(max-width:600px){.show{padding:8px}.stage{border-radius:10px}}
+@media(max-width:600px){.show{padding:8px}.stage{border-radius:10px}.drop-zone{padding:2rem 1rem}}

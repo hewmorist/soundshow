@@ -1,24 +1,20 @@
-SOUNDSHOW 0.1
+SOUNDSHOW 0.2
 
-Files required by the app:
+GITHUB PAGES — upload ONLY:
   index.html
   style.css
   slideshow.js
-  slideshow.json
 
-The two images are embedded directly in slideshow.json as WebP/Base64 data URLs.
-Audio is loaded from SoundCloud.
+PRESENTATIONS
+  sample-soundshow.json is a separate example presentation.
+  Do NOT upload it to GitHub Pages if you want the app/content separation.
 
-TEST LOCALLY
-Do not double-click index.html, because slideshow.json is loaded with fetch().
-From this folder run, for example:
-  python3 -m http.server 8000
-Then open:
-  http://localhost:8000
+HOW IT WORKS
+  1. Visit the Soundshow web app.
+  2. Choose or drag/drop a Soundshow .json file from your computer.
+  3. The browser reads the JSON locally.
+  4. Embedded images remain inside that JSON file.
+  5. SoundCloud audio is fetched from the SoundCloud URLs in the JSON.
+  6. Click Start slideshow.
 
-GITHUB PAGES
-Upload the four app files to a repository and enable GitHub Pages for the branch/folder.
-
-NOTE
-SoundCloud/browser autoplay policies can vary. The Start button supplies the initial
-user gesture; the prototype requests autoplay when each track is loaded.
+The presentation JSON is not uploaded to the Soundshow server by this app.

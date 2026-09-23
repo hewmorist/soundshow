@@ -8,10 +8,24 @@
 </head>
 <body>
   <main id="app">
-    <section id="startScreen" class="start-screen">
+    <section id="loader" class="loader">
+      <h1>Soundshow</h1>
+      <p>Open a Soundshow presentation from your computer.</p>
+
+      <label class="choose" for="fileInput">Choose JSON file</label>
+      <input id="fileInput" type="file" accept=".json,application/json">
+
+      <div id="dropZone" class="drop-zone">
+        or drag and drop a <strong>.json</strong> file here
+      </div>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="readyScreen" class="ready-screen hidden">
       <h1 id="showTitle">Soundshow</h1>
-      <p>Two songs. Two images.</p>
+      <p id="slideCount"></p>
       <button id="startBtn">Start slideshow</button>
+      <button id="chooseAnotherBtn" class="secondary">Choose another file</button>
     </section>
 
     <section id="show" class="show hidden">
@@ -25,12 +39,16 @@
       </div>
 
       <div class="controls">
-        <button id="prevBtn" aria-label="Previous slide">‹ Previous</button>
+        <button id="prevBtn">‹ Previous</button>
         <span id="counter"></span>
-        <button id="nextBtn" aria-label="Next slide">Next ›</button>
+        <button id="nextBtn">Next ›</button>
       </div>
 
-      <div id="playerWrap" class="player-wrap">
+      <div class="lower-controls">
+        <button id="exitBtn" class="secondary">Open another Soundshow</button>
+      </div>
+
+      <div class="player-wrap">
         <iframe id="scPlayer" title="SoundCloud player" allow="autoplay"></iframe>
       </div>
     </section>
