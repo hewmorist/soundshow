@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Soundshow</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <section id="startScreen" class="start-screen">
+      <h1 id="showTitle">Soundshow</h1>
+      <p>Two songs. Two images.</p>
+      <button id="startBtn">Start slideshow</button>
+    </section>
+
+    <section id="show" class="show hidden">
+      <div class="stage">
+        <img id="slideImage" alt="">
+        <div class="shade"></div>
+        <div class="copy">
+          <h2 id="slideTitle"></h2>
+          <p id="slideCaption"></p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="prevBtn" aria-label="Previous slide">‹ Previous</button>
+        <span id="counter"></span>
+        <button id="nextBtn" aria-label="Next slide">Next ›</button>
+      </div>
+
+      <div id="playerWrap" class="player-wrap">
+        <iframe id="scPlayer" title="SoundCloud player" allow="autoplay"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <script src="slideshow.js"></script>
+</body>
+</html>
