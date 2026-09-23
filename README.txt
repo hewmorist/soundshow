@@ -1,14 +1,12 @@
-SOUNDSHOW 0.3
+SOUNDSHOW 0.5
 
-GitHub Pages:
-Upload ONLY index.html.
+Upload index.html to GitHub Pages, replacing the previous version.
 
-The CSS and JavaScript are now inside index.html, eliminating mismatched/cached
-versions of separate app files.
+New behavior:
+- Press Play once.
+- Soundshow remembers that playback is active.
+- Next/Previous loads the new slide's SoundCloud track and starts it automatically.
+- If you Pause, slide changes remain paused.
+- Local JSON format is unchanged.
 
-Keep sample-soundshow.json on your computer. At the Soundshow page, choose it
-with the file picker. It is read locally in the browser and is not uploaded by
-the app.
-
-If GitHub Pages still shows the old interface after replacing index.html,
-perform a hard reload or open the page in a new private/incognito window.
+Use canonical soundcloud.com track URLs, not on.soundcloud.com short links.
