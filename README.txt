@@ -1,20 +1,14 @@
-SOUNDSHOW 0.2
+SOUNDSHOW 0.3
 
-GITHUB PAGES — upload ONLY:
-  index.html
-  style.css
-  slideshow.js
+GitHub Pages:
+Upload ONLY index.html.
 
-PRESENTATIONS
-  sample-soundshow.json is a separate example presentation.
-  Do NOT upload it to GitHub Pages if you want the app/content separation.
+The CSS and JavaScript are now inside index.html, eliminating mismatched/cached
+versions of separate app files.
 
-HOW IT WORKS
-  1. Visit the Soundshow web app.
-  2. Choose or drag/drop a Soundshow .json file from your computer.
-  3. The browser reads the JSON locally.
-  4. Embedded images remain inside that JSON file.
-  5. SoundCloud audio is fetched from the SoundCloud URLs in the JSON.
-  6. Click Start slideshow.
+Keep sample-soundshow.json on your computer. At the Soundshow page, choose it
+with the file picker. It is read locally in the browser and is not uploaded by
+the app.
 
-The presentation JSON is not uploaded to the Soundshow server by this app.
+If GitHub Pages still shows the old interface after replacing index.html,
+perform a hard reload or open the page in a new private/incognito window.
