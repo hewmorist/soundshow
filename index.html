@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Soundshow 0.7</title>
+<title>Soundshow 0.8</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 body{min-height:100vh;display:grid;place-items:center}.hidden{display:none!important}
@@ -14,7 +14,7 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 .status{min-height:1.5rem;color:#f0a0a0!important}.file-note{font-size:.9rem;color:#777!important}.ready button{margin:.35rem}
 #startBtn{background:#fff;color:#111;border-color:#fff}.secondary{background:transparent;color:#bbb}
 .show{width:min(100vw,1100px);padding:16px}.stage{position:relative;aspect-ratio:1/1;max-height:70vh;margin:auto;overflow:hidden;border-radius:18px;background:#111}
-.stage img{width:100%;height:100%;object-fit:contain;display:block;opacity:0;transition:opacity .55s}.stage img.visible{opacity:1}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;opacity:0}.stage img.active{opacity:1}
 .shade{position:absolute;inset:55% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.8));pointer-events:none}.copy{position:absolute;left:0;right:0;bottom:0;padding:clamp(1rem,4vw,2.5rem)}
 .copy h2{font-size:clamp(1.7rem,5vw,3.5rem);margin:0 0 .25rem;text-shadow:0 2px 12px #000}.copy p{font-size:clamp(1rem,2vw,1.25rem);margin:0;color:#ddd}
 .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;padding:12px 2px}.controls #prevBtn{justify-self:start}.controls #nextBtn{justify-self:end}
@@ -27,7 +27,7 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 </style>
 </head>
 <body>
-<div class="version">Soundshow 0.7</div><main>
+<div class="version">Soundshow 0.8</div><main>
 <section id="loader" class="loader">
 <h1>Soundshow</h1><p>Open a Soundshow presentation from your computer.</p>
 <label class="choose" for="fileInput">Choose JSON file</label><input id="fileInput" type="file" accept=".json,application/json">
@@ -37,7 +37,7 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 <section id="ready" class="ready hidden"><h1 id="showTitle">Soundshow</h1><p id="slideCount"></p>
 <button id="startBtn">Start slideshow</button><button id="anotherBtn" class="secondary">Choose another file</button></section>
 <section id="show" class="show hidden">
-<div class="stage"><img id="slideImage" alt=""><div class="shade"></div><div class="copy"><h2 id="slideTitle"></h2><p id="slideCaption"></p></div></div>
+<div class="stage"><img id="slideImage" class="active" alt=""><img id="slideImageB" alt=""><div class="shade"></div><div class="copy"><h2 id="slideTitle"></h2><p id="slideCaption"></p></div></div>
 <div class="controls"><button id="prevBtn">‹ Previous</button><div class="center"><button id="playBtn" class="play">▶ Play</button><span id="counter"></span></div><button id="nextBtn">Next ›</button></div>
 <div id="audioStatus" class="audio-status">Loading SoundCloud…</div>
 <div class="lower"><button id="exitBtn" class="secondary">Open another Soundshow</button></div>
@@ -48,7 +48,8 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 <script>
 "use strict";
 let config=null,index=0,widget=null,widgetReady=false,playing=false,wantsPlayback=false,pendingUrl=null,timelineTimer=null,timelineStep=-1;
-const $=id=>document.getElementById(id), loader=$("loader"),ready=$("ready"),show=$("show"),input=$("fileInput"),drop=$("dropZone"),status=$("status"),player=$("scPlayer"),img=$("slideImage"),playBtn=$("playBtn"),audioStatus=$("audioStatus");
+const $=id=>document.getElementById(id), loader=$("loader"),ready=$("ready"),show=$("show"),input=$("fileInput"),drop=$("dropZone"),status=$("status"),player=$("scPlayer"),img=$("slideImage"),imgB=$("slideImageB"),playBtn=$("playBtn"),audioStatus=$("audioStatus");
+let activeImg=img;
 
 function validate(d){if(!d||typeof d!=="object")throw Error("JSON root must be an object.");if(!Array.isArray(d.slides)||!d.slides.length)throw Error("No slides were found.");d.slides.forEach((s,i)=>{if(!s||typeof s!=="object")throw Error("Slide "+(i+1)+" is invalid.");if((typeof s.image!=="string"||!s.image)&&(!Array.isArray(s.images)||!s.images.length))throw Error("Slide "+(i+1)+" has no image.");});return d}
 async function loadFile(file){if(!file)return;status.textContent="Reading "+file.name+"…";try{config=validate(JSON.parse(await file.text()));$("showTitle").textContent=config.title||"Soundshow";$("slideCount").textContent=config.slides.length+" slide"+(config.slides.length===1?"":"s")+" loaded from "+file.name;status.textContent="";loader.classList.add("hidden");show.classList.add("hidden");ready.classList.remove("hidden")}catch(e){status.textContent="Could not open Soundshow: "+e.message}}
@@ -79,9 +80,23 @@ function timelineImage(slide,step){
   if(typeof ev.image==="number"&&Array.isArray(slide.images))source=slide.images[ev.image];
   else if(typeof ev.image==="string")source=ev.image;
   if(!source)return;
-  img.classList.remove("visible");
+  const transition=(ev.transition||"fade").toLowerCase();
+  const seconds=Math.max(0,Number(ev.duration ?? 0.7));
+  const incoming=(activeImg===img)?imgB:img;
+  const outgoing=activeImg;
   const pre=new Image();
-  pre.onload=()=>{img.src=source;requestAnimationFrame(()=>img.classList.add("visible"))};
+  pre.onload=()=>{
+    incoming.src=source; incoming.alt=slide.title||"";
+    if(transition==="cut"||seconds===0){
+      outgoing.style.transition="none"; incoming.style.transition="none";
+      outgoing.classList.remove("active"); incoming.classList.add("active");
+    }else{
+      outgoing.style.transition=`opacity ${seconds}s ease`;
+      incoming.style.transition=`opacity ${seconds}s ease`;
+      incoming.classList.add("active"); outgoing.classList.remove("active");
+    }
+    activeImg=incoming;
+  };
   pre.src=source;
 }
 function startTimeline(slide){
@@ -101,7 +116,8 @@ function startTimeline(slide){
 function render(n){
  index=(n+config.slides.length)%config.slides.length;const s=config.slides[index];stopTimeline();
  const firstImage=(Array.isArray(s.images)&&s.images.length)?s.images[0]:s.image;
- img.classList.remove("visible");const pre=new Image();pre.onload=()=>{img.src=firstImage;img.alt=s.title||"";requestAnimationFrame(()=>img.classList.add("visible"))};pre.src=firstImage;
+ img.style.transition="none";imgB.style.transition="none";img.classList.add("active");imgB.classList.remove("active");activeImg=img;
+ const pre=new Image();pre.onload=()=>{img.src=firstImage;img.alt=s.title||""};pre.src=firstImage;
  $("slideTitle").textContent=s.title||"";$("slideCaption").textContent=s.caption||"";$("counter").textContent=(index+1)+" / "+config.slides.length;
  loadTrack(s.soundcloud||null);
  setTimeout(()=>startTimeline(s),700);
