@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Soundshow 0.6</title>
+<title>Soundshow 0.7</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 body{min-height:100vh;display:grid;place-items:center}.hidden{display:none!important}
@@ -27,7 +27,7 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 </style>
 </head>
 <body>
-<div class="version">Soundshow 0.6</div><main>
+<div class="version">Soundshow 0.7</div><main>
 <section id="loader" class="loader">
 <h1>Soundshow</h1><p>Open a Soundshow presentation from your computer.</p>
 <label class="choose" for="fileInput">Choose JSON file</label><input id="fileInput" type="file" accept=".json,application/json">
@@ -47,10 +47,10 @@ button:hover,.choose:hover{background:#292929}.loader,.ready{text-align:center;w
 <script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
 "use strict";
-let config=null,index=0,widget=null,widgetReady=false,playing=false,wantsPlayback=false,pendingUrl=null;
+let config=null,index=0,widget=null,widgetReady=false,playing=false,wantsPlayback=false,pendingUrl=null,timelineTimer=null,timelineStep=-1;
 const $=id=>document.getElementById(id), loader=$("loader"),ready=$("ready"),show=$("show"),input=$("fileInput"),drop=$("dropZone"),status=$("status"),player=$("scPlayer"),img=$("slideImage"),playBtn=$("playBtn"),audioStatus=$("audioStatus");
 
-function validate(d){if(!d||typeof d!=="object")throw Error("JSON root must be an object.");if(!Array.isArray(d.slides)||!d.slides.length)throw Error("No slides were found.");d.slides.forEach((s,i)=>{if(!s||typeof s!=="object")throw Error("Slide "+(i+1)+" is invalid.");if(typeof s.image!=="string"||!s.image)throw Error("Slide "+(i+1)+" has no image.");});return d}
+function validate(d){if(!d||typeof d!=="object")throw Error("JSON root must be an object.");if(!Array.isArray(d.slides)||!d.slides.length)throw Error("No slides were found.");d.slides.forEach((s,i)=>{if(!s||typeof s!=="object")throw Error("Slide "+(i+1)+" is invalid.");if((typeof s.image!=="string"||!s.image)&&(!Array.isArray(s.images)||!s.images.length))throw Error("Slide "+(i+1)+" has no image.");});return d}
 async function loadFile(file){if(!file)return;status.textContent="Reading "+file.name+"…";try{config=validate(JSON.parse(await file.text()));$("showTitle").textContent=config.title||"Soundshow";$("slideCount").textContent=config.slides.length+" slide"+(config.slides.length===1?"":"s")+" loaded from "+file.name;status.textContent="";loader.classList.add("hidden");show.classList.add("hidden");ready.classList.remove("hidden")}catch(e){status.textContent="Could not open Soundshow: "+e.message}}
 
 function initWidget(){
@@ -70,13 +70,43 @@ function loadTrack(url){
  if(!widgetReady){pendingUrl=url;player.src="https://w.soundcloud.com/player/?url="+encodeURIComponent(url)+"&auto_play=false";initWidget();return}
  widget.load(url,{auto_play:false,hide_related:true,show_comments:false,show_reposts:false,show_user:true,visual:false,callback:()=>{if(wantsPlayback){audioStatus.textContent="Starting track…";setTimeout(()=>widget.play(),150)}else{audioStatus.textContent="SoundCloud ready — press Play."}}});
 }
+
+function stopTimeline(){if(timelineTimer){clearInterval(timelineTimer);timelineTimer=null}timelineStep=-1}
+function timelineImage(slide,step){
+  if(!slide.timeline||!slide.timeline.length)return;
+  const ev=slide.timeline[step]; if(!ev)return;
+  let source=null;
+  if(typeof ev.image==="number"&&Array.isArray(slide.images))source=slide.images[ev.image];
+  else if(typeof ev.image==="string")source=ev.image;
+  if(!source)return;
+  img.classList.remove("visible");
+  const pre=new Image();
+  pre.onload=()=>{img.src=source;requestAnimationFrame(()=>img.classList.add("visible"))};
+  pre.src=source;
+}
+function startTimeline(slide){
+  stopTimeline();
+  if(!slide.timeline||!slide.timeline.length||!widgetReady)return;
+  timelineTimer=setInterval(()=>{
+    widget.getPosition(ms=>{
+      const sec=ms/1000; let step=-1;
+      for(let i=0;i<slide.timeline.length;i++){
+        if(sec>=Number(slide.timeline[i].time||0))step=i; else break;
+      }
+      if(step!==timelineStep&&step>=0){timelineStep=step;timelineImage(slide,step)}
+    });
+  },250);
+}
+
 function render(n){
- index=(n+config.slides.length)%config.slides.length;const s=config.slides[index];
- img.classList.remove("visible");const pre=new Image();pre.onload=()=>{img.src=s.image;img.alt=s.title||"";requestAnimationFrame(()=>img.classList.add("visible"))};pre.src=s.image;
+ index=(n+config.slides.length)%config.slides.length;const s=config.slides[index];stopTimeline();
+ const firstImage=(Array.isArray(s.images)&&s.images.length)?s.images[0]:s.image;
+ img.classList.remove("visible");const pre=new Image();pre.onload=()=>{img.src=firstImage;img.alt=s.title||"";requestAnimationFrame(()=>img.classList.add("visible"))};pre.src=firstImage;
  $("slideTitle").textContent=s.title||"";$("slideCaption").textContent=s.caption||"";$("counter").textContent=(index+1)+" / "+config.slides.length;
  loadTrack(s.soundcloud||null);
+ setTimeout(()=>startTimeline(s),700);
 }
-function reset(){if(widgetReady)widget.pause();player.src="about:blank";widget=null;widgetReady=false;pendingUrl=null;playing=false;wantsPlayback=false;input.value="";config=null;show.classList.add("hidden");ready.classList.add("hidden");loader.classList.remove("hidden")}
+function reset(){stopTimeline();if(widgetReady)widget.pause();player.src="about:blank";widget=null;widgetReady=false;pendingUrl=null;playing=false;wantsPlayback=false;input.value="";config=null;show.classList.add("hidden");ready.classList.add("hidden");loader.classList.remove("hidden")}
 input.addEventListener("change",()=>loadFile(input.files&&input.files[0]));
 ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
